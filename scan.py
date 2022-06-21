@@ -1,13 +1,13 @@
 import os
-import glob
+import pathlib
 import re
 import time
 import pandas as pd
 import concurrent.futures
 
-ROOT = 'C:\\'
+ROOT = "F:\\Drive"
 
-PARALLEL = True
+PARALLEL = False
 
 EXCLUDE = [
     os.path.join(ROOT, '$Recycle.Bin'),
@@ -17,9 +17,9 @@ EXCLUDE = [
 EXCLUDE_RE = list(map(lambda path: f'{re.escape(path)}(.*)?', EXCLUDE))
 EXCLUDE_EXPR = "^(" + "|".join(EXCLUDE_RE) + ")$"
 
-def scan_glob(glob_pattern):
+def scan_glob(dirname):
     sizes = dict()
-    for i, filepath in enumerate(glob.iglob(glob_pattern, recursive=True)):
+    for i, filepath in enumerate(pathlib.Path(dirname).rglob('*')):
         
         # get size
         try:
@@ -35,7 +35,7 @@ def scan_glob(glob_pattern):
         
         # log progress
         if i%1000 == 0:
-            print(f'Searching files ({glob_pattern}, {i})')
+            print(f'Searching files ({dirname}, {i})')
         
         # # stop early for testing
         # if i >= 5000:
@@ -59,8 +59,7 @@ def main():
     for item in os.listdir(ROOT):
         dirpath = os.path.join(ROOT, item)
         if not re.match(EXCLUDE_EXPR, dirpath):
-            _glob = os.path.join(dirpath, '**/*')
-            globs.append(_glob)
+            globs.append(dirpath)
 
     if PARALLEL:
         with concurrent.futures.ProcessPoolExecutor(max_workers=6) as executor:
@@ -88,6 +87,8 @@ def main():
     GB = df['SizeGB'].max()
     elapsed = time.time() - start
     print(f'Scanned {round(GB, 2)} GB in {elapsed} seconds')
+
+    return df
 
 if __name__ == '__main__':
     main()
